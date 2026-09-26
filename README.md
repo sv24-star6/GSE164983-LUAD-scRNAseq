@@ -2,21 +2,21 @@
 
 A reproducible single-cell RNA-seq analysis of two primary human lung adenocarcinoma (LUAD) specimens from **GEO GSE164983**, implemented in R with Seurat.
 
-The project covers quality control, sample-wise doublet detection, normalization, dimensionality reduction, unsupervised clustering, marker-guided cell-type annotation, tumour cellular-composition analysis, epithelial-associated gene analysis, and functional pathway enrichment.
+This project demonstrates an end-to-end scRNA-seq workflow spanning quality control, sample-wise doublet detection, normalization, dimensionality reduction, unsupervised clustering, marker-guided cell-type annotation, cellular-composition analysis, epithelial-associated gene analysis, and functional pathway enrichment.
 
-## Project question
+## Biological question
 
 **What cellular populations and transcriptional programmes characterise the tumour microenvironment of primary human lung adenocarcinoma, and what biologically relevant pathways can be identified from single-cell RNA sequencing?**
 
 ## Dataset
 
-- GEO accession: **GSE164983**
-- Samples analysed: **2 primary human LUAD specimens**
-- Technology: **10x Genomics Chromium Single Cell 3'**
-- Input: processed filtered feature-barcode H5 matrices
-- Reference genome: GRCh38
+- **GEO accession:** GSE164983
+- **Samples:** 2 primary human LUAD specimens
+- **Technology:** 10x Genomics Chromium Single Cell 3'
+- **Input:** processed filtered feature-barcode H5 matrices
+- **Reference:** GRCh38
 
-Raw sequencing files are not required for this workflow. Download the two processed `filtered_feature_bc_matrix.h5` files from GEO and place them in `data/`.
+Raw sequencing files are not required. Download the two processed `filtered_feature_bc_matrix.h5` files from GEO and place them in a local `data/` directory.
 
 ## Analysis workflow
 
@@ -24,7 +24,7 @@ Raw sequencing files are not required for this workflow. Download the two proces
 Processed 10x matrices
         |
         v
-Initial dataset: 22,323 cells
+22,323 cells
         |
         v
 Quality control
@@ -45,13 +45,10 @@ Sample-wise scDblFinder
 Log normalization + 2,000 HVGs
         |
         v
-PCA (50 PCs)
+PCA -> neighbour graph -> clustering -> UMAP
         |
         v
-Neighbour graph + clustering (30 PCs)
-        |
-        v
-UMAP + marker-guided annotation
+Marker-guided cell-type annotation
         |
         v
 Cellular composition
@@ -65,34 +62,37 @@ GO / Reactome / KEGG enrichment
 
 ## Key results
 
-### Quality control and doublet removal
+### 1. Quality control and doublet removal
 
-The two samples contained **22,323 cells** before QC. Dataset-informed filtering retained **21,926 cells (98.2%)**. Doublets were detected independently within each 10x capture using scDblFinder. Predicted doublet rates were approximately **13.4%** in sample 591146 and **9.0%** in sample 614658, leaving **19,409 singlets** for downstream analysis.
+The dataset contained **22,323 cells** before QC. Dataset-informed filtering retained **21,926 cells (98.2%)**. Doublets were detected independently within each 10x capture using scDblFinder: approximately **13.4%** in sample 591146 and **9.0%** in sample 614658. After doublet removal, **19,409 singlets** were retained for downstream analysis.
 
-### Cellular landscape
+Supporting QC plots are available in the [figures](figures/) directory.
 
-Marker-guided annotation identified broad immune, epithelial and stromal populations, including:
+### 2. Cellular landscape
 
-- CD4/conventional T cells
-- Cytotoxic T cells
-- Regulatory T cells
-- Interferon-responsive T cells
-- NK cells
-- B cells and plasma cells
-- Macrophage/monocyte cells
-- Mast cells and neutrophils
-- pDCs
-- Epithelial cells
-- Endothelial cells
-- Fibroblasts
+Marker-guided annotation resolved immune, epithelial and stromal populations including CD4/conventional T cells, cytotoxic T cells, Tregs, interferon-responsive T cells, NK cells, B/plasma cells, macrophage/monocyte cells, mast cells, neutrophils, pDCs, epithelial cells, endothelial cells and fibroblasts.
 
-The two specimens showed substantial descriptive inter-tumour heterogeneity. Sample 591146 contained a more heterogeneous mixture with appreciable epithelial, cytotoxic T, NK and mast-cell populations, whereas sample 614658 was dominated by CD4/conventional T cells and contained a distinct interferon-responsive T-cell state.
+![Annotated LUAD cell populations](figures/05_UMAP_cell_types.png)
 
-### Epithelial-associated programme
+### 3. Inter-tumour cellular heterogeneity
 
-Comparison of annotated epithelial cells with the other cell populations identified **1,880 epithelial-associated marker genes**. Strongly enriched genes included `EHF`, `CXCL17`, `TFF3`, `CEACAM6`, `PIGR`, `ITGB6`, `SLC6A14` and `BPIFB1`.
+The two specimens displayed markedly different cellular compositions. Sample 591146 contained a more heterogeneous mixture with appreciable epithelial, cytotoxic T, NK and mast-cell populations. Sample 614658 was predominantly CD4/conventional T cells and also contained a distinct interferon-responsive T-cell population.
 
-Functional enrichment showed convergent biological themes involving:
+These differences are **descriptive observations from two specimens**, not population-level estimates.
+
+![Cellular composition of LUAD samples](figures/06_cell_type_composition.png)
+
+### 4. Marker-based annotation validation
+
+Canonical lineage markers supported the broad annotations, including T-cell, cytotoxic/NK, B/plasma, myeloid, mast, epithelial, endothelial and fibroblast populations. The interferon-responsive population showed T-lineage markers together with an interferon-stimulated expression programme.
+
+![Canonical marker expression](figures/07_cell_type_marker_dotplot.png)
+
+### 5. Epithelial-associated transcriptional programme
+
+Comparison of annotated epithelial cells with all other annotated populations identified **1,880 epithelial-associated marker genes**. Prominent genes included `EHF`, `CXCL17`, `TFF3`, `CEACAM6`, `PIGR`, `ITGB6`, `SLC6A14` and `BPIFB1`.
+
+Functional enrichment highlighted convergent biological themes involving:
 
 - cell-junction organisation
 - extracellular-matrix organisation and ECM-receptor interactions
@@ -101,11 +101,23 @@ Functional enrichment showed convergent biological themes involving:
 - RHO-family GTPase signalling
 - receptor tyrosine kinase signalling
 
-These results describe programmes enriched in epithelial cells relative to other cell populations in the dataset; they are **not** tumour-versus-normal differential-expression results.
+![Epithelial pathway enrichment](figures/08_epithelial_pathway_enrichment.png)
 
-## Why the samples were not forcibly integrated
+The enrichment analysis describes pathways associated with epithelial cells **relative to the other cell populations in this dataset**. It should not be interpreted as tumour-versus-normal pathway activation.
 
-UMAP and PCA showed sample-associated structure. With only two patients, biological inter-patient variation and technical sample effects cannot be reliably disentangled. Therefore, the primary analysis preserves the unintegrated structure rather than automatically applying Harmony/CCA and potentially removing genuine biological variation.
+## Analysis decisions
+
+### Why integration was not forced
+
+PCA and UMAP showed substantial sample-associated structure. With only two patients, technical sample effects and genuine inter-patient biology cannot be reliably disentangled. The primary analysis therefore preserves the unintegrated structure rather than automatically applying Harmony/CCA and potentially removing biological variation.
+
+The sample-level UMAP is retained as part of the analytical record:
+
+![LUAD single-cell landscape by sample](figures/04_UMAP_by_sample.png)
+
+### Why epithelial cells are not labelled malignant
+
+The dataset does not contain matched normal controls, and epithelial identity alone does not establish malignancy. The cells are therefore conservatively described as **epithelial**. Additional evidence, such as copy-number inference with an appropriate reference population, would be required to support malignant-cell classification.
 
 ## Repository structure
 
@@ -120,7 +132,7 @@ GSE164983-LUAD-scRNAseq/
 │   ├── 06_epithelial_analysis.R
 │   └── 07_pathway_enrichment.R
 ├── data/       # GEO H5 files; excluded from Git
-├── figures/    # Generated analysis figures
+├── figures/    # QC and analysis figures
 ├── results/    # Lightweight result tables
 ├── .gitignore
 └── README.md
@@ -131,27 +143,27 @@ GSE164983-LUAD-scRNAseq/
 Run the scripts sequentially from the repository root:
 
 ```text
-01_load_data.R
-02_quality_control.R
-03_doublet_detection.R
-04_normalization_clustering.R
-05_cell_type_annotation.R
-06_epithelial_analysis.R
-07_pathway_enrichment.R
+R/01_load_data.R
+R/02_quality_control.R
+R/03_doublet_detection.R
+R/04_normalization_clustering.R
+R/05_cell_type_annotation.R
+R/06_epithelial_analysis.R
+R/07_pathway_enrichment.R
 ```
 
-Main R packages include **Seurat**, **SingleCellExperiment**, **scDblFinder**, **gprofiler2**, **dplyr**, **ggplot2**, **patchwork**, and **hdf5r**.
+Main R packages: **Seurat**, **SingleCellExperiment**, **scDblFinder**, **gprofiler2**, **dplyr**, **ggplot2**, **patchwork**, and **hdf5r**.
 
-## Interpretation and limitations
+## Limitations
 
-This is an exploratory analysis of **two LUAD specimens**, not a population-level cohort study. Sample identity is confounded with patient-specific biology and potential technical effects, so differences between the two samples are presented descriptively rather than as generalisable LUAD effects. The dataset does not contain matched normal controls. Epithelial cells are therefore labelled **epithelial**, not automatically classified as malignant; establishing malignancy would require additional evidence such as copy-number inference or appropriate reference cells.
+This is an exploratory analysis of **two LUAD specimens**, not a population-level cohort study. Sample identity is confounded with patient-specific biology and potential technical effects. Accordingly, between-sample differences are interpreted descriptively rather than as generalisable LUAD effects.
 
-The epithelial enrichment analysis compares epithelial cells with other annotated cell populations. Consequently, enriched pathways should not be interpreted as pathways upregulated in LUAD relative to normal lung.
+There are no matched normal controls, so the epithelial marker and enrichment analyses are not tumour-versus-normal comparisons. No population-level differential-expression inference is made from the two specimens.
 
 ## Skills demonstrated
 
-Single-cell RNA sequencing · Seurat · scDblFinder · quality control · dimensionality reduction · unsupervised clustering · marker-based cell annotation · differential marker analysis · functional enrichment · GO · Reactome · KEGG · g:Profiler · reproducible R workflows · Git/GitHub
+**Single-cell RNA sequencing · Seurat · scDblFinder · QC · PCA · UMAP · unsupervised clustering · marker-based cell annotation · differential marker analysis · functional enrichment · GO · Reactome · KEGG · g:Profiler · R · reproducible analysis · Git/GitHub**
 
 ## Data availability
 
-The source data are publicly available through **NCBI Gene Expression Omnibus, accession GSE164983**. Large raw/processed data files and intermediate Seurat `.rds` objects are intentionally excluded from this repository.
+The source data are publicly available through **NCBI Gene Expression Omnibus (GSE164983)**. Large source files and intermediate Seurat `.rds` objects are intentionally excluded from this repository.
